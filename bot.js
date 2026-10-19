@@ -1,6 +1,27 @@
 require('dotenv').config();
 
+const express = require('express');
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+
+const app = express();
+const PORT = Number(process.env.PORT) || 3000;
+
+app.use(express.json());
+
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service: 'discord-bot',
+    botLoggedIn: !!client.user
+  });
+});
+
+app.get('/', (req, res) => {
+  res.status(200).json({
+    message: 'Discord bot is running',
+    status: 'ok'
+  });
+});
 
 const client = new Client({
   intents: [
@@ -200,5 +221,9 @@ if (!DISCORD_TOKEN) {
   console.error('Missing DISCORD_TOKEN in environment variables. Please add it to a .env file.');
   process.exit(1);
 }
+
+app.listen(PORT, () => {
+  console.log(`Discord bot server listening on port ${PORT}`);
+});
 
 client.login(DISCORD_TOKEN);
