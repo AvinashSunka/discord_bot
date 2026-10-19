@@ -1,0 +1,14 @@
+{
+  "name": "leetcode-pattern-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot that shows LeetCode pattern buttons and sends the selected pattern to the Spring Boot backend",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "node bot.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.17.3",
+    "dotenv": "^16.4.5"
+  }
+}
