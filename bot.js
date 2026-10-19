@@ -34,6 +34,7 @@ const client = new Client({
 const SPRING_API_BASE = (process.env.SPRING_API_BASE || 'http://localhost:8080').replace(/\/+$/, '');
 const SPRING_USERNAME = process.env.SPRING_USERNAME || 'admin';
 const SPRING_PASSWORD = process.env.SPRING_PASSWORD || 'secret123';
+const DAILY_CHALLENGE_URL = (process.env.LEETCODE_WRAPPER_URL || 'https://leetcode-wrapper.onrender.com/api/daily').replace(/\/+$/, '');
 
 function buildBackendUrl(pattern) {
   const normalizedBase = SPRING_API_BASE.replace(/\/api\/problems$/, '').replace(/\/api$/, '');
@@ -140,6 +141,61 @@ async function showPatterns(channel) {
   await channel.send({ embeds: [embed], components: buildPatternRows() });
 }
 
+async function fetchDailyChallenge() {
+  const response = await fetch(DAILY_CHALLENGE_URL, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json'
+    }
+  });
+
+  const text = await response.text();
+
+  let payload = null;
+  try {
+    payload = JSON.parse(text);
+  } catch (error) {
+    payload = {
+      success: false,
+      message: text || 'Unexpected response from the daily challenge service.'
+    };
+  }
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    payload
+  };
+}
+
+async function showDailyChallenge(channel) {
+  const result = await fetchDailyChallenge();
+
+  if (!result.ok || !result.payload?.success) {
+    const message = result.payload?.message || 'The daily challenge service is unavailable right now.';
+    await channel.send({ content: `Daily challenge unavailable: ${message}` });
+    return;
+  }
+
+  const challenge = result.payload.data || result.payload.question || result.payload;
+  const title = challenge.title || 'Daily LeetCode Challenge';
+  const slug = challenge.titleSlug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const difficulty = challenge.difficulty || 'Unknown';
+  const date = challenge.date || new Date().toISOString().slice(0, 10);
+  const url = `https://leetcode.com/problems/${slug}/`;
+
+  const embed = new EmbedBuilder()
+    .setTitle('Daily LeetCode Challenge')
+    .setDescription(`[${title}](${url})`)
+    .addFields(
+      { name: 'Difficulty', value: difficulty, inline: true },
+      { name: 'Date', value: date, inline: true }
+    )
+    .setColor('#F4B400');
+
+  await channel.send({ embeds: [embed] });
+}
+
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
@@ -149,6 +205,10 @@ client.on('messageCreate', async (message) => {
 
   if (message.content.toLowerCase() === '!patterns') {
     await showPatterns(message.channel);
+  }
+
+  if (message.content.toLowerCase() === '!daily') {
+    await showDailyChallenge(message.channel);
   }
 });
 
